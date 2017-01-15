@@ -1,0 +1,22 @@
+// Test file for GitWCRev
+
+char* Revision      = "$WCREV$";
+char* RevisionShort = "$WCREV=7$";
+char* Modified      = "$WCMODS?Modified:Not modified$";
+char* Unversioned   = "$WCUNVER?Unversioned items found:no unversioned items$";
+char* Date          = "$WCDATE$";
+char* CustDate      = "$WCDATE=%a, %d %B %Y$";
+char* CustDateEmpty = "$WCDATE=$";
+char* CustDateInval = "$WCDATE=%a, %c %B %Y$";
+char* DateUTC       = "$WCDATEUTC$";
+char* CustDateUTC   = "$WCDATEUTC=%a, %d %B %Y$";
+char* TimeNow       = "$WCNOW$";
+char* TimeNowUTC    = "$WCNOWUTC$";
+char* IsTagged      = "$WCISTAGGED?Tagged:Not tagged$";
+char* isInGit       = "$WCINGIT?versioned:not versioned$";
+
+#if $WCMODS?1:0$
+#error Source is modified
+#endif
+
+// EndOfFile
