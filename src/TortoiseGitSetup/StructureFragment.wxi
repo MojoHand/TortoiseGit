@@ -799,6 +799,54 @@
 						<File Id="F__askpass" Name="sshaskpass.exe" DiskId="1" Source="..\..\bin\$(var.ReleasePath)\bin\sshaskpass.exe" />
 					</Component>
 
+					<Component Id="C__TortoiseGitGitWCRev" Guid="$(var.GuidTortoiseGitGitWCRev)" Win64="$(var.Win64YesNo)"> <!-- was ist mit Win64 no?-->
+              <File Id="F__SubWCRev" Name="SubWCRev.exe" DiskId="1" Source="..\..\bin\$(var.ReleasePath)\bin\SubWCRev.exe" />
+              <File Id="F__SubWCRevCOM" Name="SubWCRevCOM.exe" DiskId="1" Source="..\..\bin\$(var.ReleasePath)\bin\SubWCRevCOM.exe" />
+
+              <!-- set paths we use to find the executables -->
+              <RegistryKey Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\App Paths\SubWCRev.exe" />
+              <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\App Paths\SubWCRev.exe" Name="Path" Value="[INSTALLDIR]bin" Type="string" />
+              <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\App Paths\SubWCRev.exe" Value="[INSTALLDIR]bin\SubWCRev.exe" Type="string" />
+
+              <!-- register the SubWCRev COM-Object -->
+              <Environment Id="Environment" Name="PATH" Part="last" System="yes" Value="[INSTALLDIR]bin" Action="set" />
+              <RegistryKey Root="HKLM" Key="Software\Classes\CLSID\{$(var.GuidSubWCRev)}" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\CLSID\{$(var.GuidSubWCRev)}\LocalServer32" Value="[INSTALLDIR]bin\SubWCRevCOM.exe /automation" Type="string" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\CLSID\{$(var.GuidSubWCRev)}\ProgID" Value="SubWCRev.object.1" Type="string" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\CLSID\{$(var.GuidSubWCRev)}\VersionIndependentProgID" Value="SubWCRev.object" Type="string" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\CLSID\{$(var.GuidSubWCRev)}\TypeLib" Value="{$(var.GuidSubWCRevTypeLib)}" Type="string" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\CLSID\{$(var.GuidSubWCRev)}" Value="SubWCRev Server Object" Type="string" />
+
+              <RegistryKey Root="HKLM" Key="Software\Classes\SubWCRev.object" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\SubWCRev.object" Value="SubWCRev Server Object" Type="string" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\SubWCRev.object\CLSID" Value="{$(var.GuidSubWCRev)}" Type="string" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\SubWCRev.object\CurVer" Value="SubWCRev.object.1" Type="string" />
+
+              <RegistryKey Root="HKLM" Key="Software\Classes\SubWCRev.object.1" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\SubWCRev.object.1" Value="SubWCRev Server Object" Type="string" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\SubWCRev.object.1\CLSID" Value="{$(var.GuidSubWCRev)}" Type="string" />
+
+              <RegistryKey Root="HKLM" Key="Software\Classes\TypeLib\{$(var.GuidSubWCRevTypeLib)}" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\TypeLib\{$(var.GuidSubWCRevTypeLib)}\1.0" Value="SubWCRev Type Library" Type="string" />
+              <RegistryKey Root="HKLM" Key="Software\Classes\TypeLib\{$(var.GuidSubWCRevTypeLib)}\1.0\0" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\TypeLib\{$(var.GuidSubWCRevTypeLib)}\1.0\0\win32" Value="[INSTALLDIR]bin\SubWCRevCOM.exe" Type="string" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\TypeLib\{$(var.GuidSubWCRevTypeLib)}\1.0\FLAGS" Value="0" Type="string" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\TypeLib\{$(var.GuidSubWCRevTypeLib)}\1.0\HELPDIR" Value="[INSTALLDIR]" Type="string" />
+
+              <RegistryKey Root="HKLM" Key="Software\Classes\Interface\{$(var.GuidSubWCRevInterface)}" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\Interface\{$(var.GuidSubWCRevInterface)}" Value="ISubWCRev" Type="string" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\Interface\{$(var.GuidSubWCRevInterface)}\ProxyStubClsid" Value="{00020424-0000-0000-C000-000000000046}" Type="string" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\Interface\{$(var.GuidSubWCRevInterface)}\ProxyStubClsid32" Value="{00020424-0000-0000-C000-000000000046}" Type="string" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\Interface\{$(var.GuidSubWCRevInterface)}\TypeLib" Value="{$(var.GuidSubWCRevTypeLib)}" Type="string" />
+              <RegistryValue Root="HKLM" Key="Software\Classes\Interface\{$(var.GuidSubWCRevInterface)}\TypeLib" Name="Version" Value="1.0" Type="string" />
+
+<!--2-->
+              <RegistryKey Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\App Paths\SubWCRev.exe" />
+              <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\App Paths\SubWCRev.exe" Name="Path" Value="[INSTALLDIR]bin" Type="string" />
+              <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\App Paths\SubWCRev.exe" Value="[INSTALLDIR]bin\SubWCRev.exe" Type="string" />
+
+					</Component>
+
 					<Component Id="C__TGitCache" Guid="$(var.GuidTortoiseGitCache)" Win64="$(var.Win64YesNo)">
 						<File Id="F__TGitCache" Name="TGitCache.exe" DiskId="1" Source="..\..\bin\$(var.ReleasePath)\bin\TGitCache.exe" KeyPath="yes"/>
 					</Component>
