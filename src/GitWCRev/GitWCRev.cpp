@@ -722,7 +722,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	if (!bQuiet)
 	{
-		_tprintf(L"Last committed at revision %s\n", SubStat.HeadHash);
+		_tprintf(L"Last committed at revision %s\n", SubStat.HeadHashReadable);
 
 		if (SubStat.HasMods)
 			_tprintf(L"Local modifications found\n");
