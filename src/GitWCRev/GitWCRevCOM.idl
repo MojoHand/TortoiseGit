@@ -35,11 +35,11 @@ library LibGitWCRev
     ]
     interface IGitWCRev : IDispatch
     {
-        [helpstring("Fetches the status information. Call this to initialize all the properties")]
-        HRESULT GetWCInfo([in] BSTR wcPath, [in]VARIANT_BOOL folders, [in]VARIANT_BOOL externals);
+        //[helpstring("Fetches the status information. Call this to initialize all the properties")]
+        //HRESULT GetWCInfo([in] BSTR wcPath, [in]VARIANT_BOOL folders, [in]VARIANT_BOOL externals);
 
-        [helpstring("Fetches the status information. Call this to initialize all the properties")]
-        HRESULT GetWCInfo2([in] BSTR wcPath, [in]VARIANT_BOOL folders, [in]VARIANT_BOOL externals, [in]VARIANT_BOOL externalsNoMixed);
+        //[helpstring("Fetches the status information. Call this to initialize all the properties")]
+        //HRESULT GetWCInfo2([in] BSTR wcPath, [in]VARIANT_BOOL folders, [in]VARIANT_BOOL externals, [in]VARIANT_BOOL externalsNoMixed);
 
         [propget, helpstring("Returns the working copy revision")]
         HRESULT Revision([out, retval]VARIANT* rev);
@@ -56,14 +56,14 @@ library LibGitWCRev
         [propget, helpstring("TRUE if the working copy has unversioned items")]
         HRESULT HasUnversioned([out, retval]VARIANT_BOOL* modifications);
 
-        [propget, helpstring("TRUE if all externals are fixed to an explicit revision")]
-        HRESULT HaveExternalsAllFixedRevision([out, retval]VARIANT_BOOL* modifications);
+        //[propget, helpstring("TRUE if all externals are fixed to an explicit revision")]
+        //HRESULT HaveExternalsAllFixedRevision([out, retval]VARIANT_BOOL* modifications);
 
         [propget, helpstring("TRUE if the repository URL contains the tags classification pattern")]
         HRESULT IsWcTagged([out, retval]VARIANT_BOOL* modifications);
 
-        [propget, helpstring("TRUE if the file or folder is under SVN version control")]
-        HRESULT IsSvnItem([out, retval]VARIANT_BOOL* svn_item);
+        [propget, helpstring("TRUE if the file or folder is under Git version control")]
+        HRESULT IsGitItem([out, retval]VARIANT_BOOL* git_item);
     }
 
 

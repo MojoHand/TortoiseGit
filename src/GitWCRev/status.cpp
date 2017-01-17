@@ -24,6 +24,8 @@
 #include "StringUtils.h"
 #include "UnicodeUtils.h"
 #include <fstream>
+#include <ShlObj.h>
+#include "git2/sys/repository.h"
 
 void LoadIgnorePatterns(const char* wc, GitWCRev_t* SubStat)
 {
@@ -68,6 +70,76 @@ tstring Tokenize(const _TCHAR* str, const _TCHAR* delim, tstring::size_type& iSt
 	return tstring();
 }
 
+static std::wstring GetHomePath()
+{
+	wchar_t* tmp;
+	if ((tmp = _wgetenv(L"HOME")) != nullptr && *tmp)
+		return tmp;
+
+	if ((tmp = _wgetenv(L"HOMEDRIVE")) != nullptr)
+	{
+		std::wstring home(tmp);
+		if ((tmp = _wgetenv(L"HOMEPATH")) != nullptr)
+		{
+			home.append(tmp);
+			if (PathIsDirectory(home.c_str()))
+				return home;
+		}
+	}
+
+	if ((tmp = _wgetenv(L"USERPROFILE")) != nullptr && *tmp)
+		return tmp;
+
+	return {};
+}
+
+static int is_cygwin_msys2_hack_active()
+{
+	HKEY hKey;
+	DWORD dwType = REG_DWORD;
+	DWORD dwValue = 0;
+	DWORD dwSize = sizeof(dwValue);
+	if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\TortoiseGit", 0, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS)
+	{
+		RegQueryValueExW(hKey, L"CygwinHack", nullptr, &dwType, (LPBYTE)&dwValue, &dwSize);
+		if (dwValue != 1)
+			RegQueryValueExW(hKey, L"Msys2Hack", nullptr, &dwType, (LPBYTE)&dwValue, &dwSize);
+		RegCloseKey(hKey);
+	}
+	return dwValue == 1;
+}
+
+static std::wstring GetProgramDataConfig()
+{
+	char pointer[MAX_PATH];
+	wchar_t wbuffer[MAX_PATH];
+
+	// do not use shared windows-wide system config when cygwin hack is active
+	if (is_cygwin_msys2_hack_active())
+		return {};
+
+	if (SHGetFolderPathW(nullptr, CSIDL_COMMON_APPDATA, nullptr, SHGFP_TYPE_CURRENT, wbuffer) != S_OK || wcslen(wbuffer) >= MAX_PATH - 11) /* 11 = len("\\Git\\config") */
+		return{};
+
+	wcscat(wbuffer, L"\\Git\\config");
+
+	return wbuffer;
+}
+
+static std::wstring GetSystemGitConfig()
+{
+	HKEY hKey;
+	DWORD dwType = REG_SZ;
+	TCHAR path[MAX_PATH] = { 0 };
+	DWORD dwSize = _countof(path) - 1;
+	if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\TortoiseGit", 0, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS)
+	{
+		RegQueryValueExW(hKey, L"SystemConfig", nullptr, &dwType, (LPBYTE)&path, &dwSize);
+		RegCloseKey(hKey);
+	}
+	return path;
+}
+
 int GetStatus(const TCHAR* wc, GitWCRev_t& SubStat)
 {
 	std::string wcA = CUnicodeUtils::StdGetUTF8(wc);
@@ -79,15 +151,19 @@ int GetStatus(const TCHAR* wc, GitWCRev_t& SubStat)
 	if (git_repository_open(repo.GetPointer(), wcroot->ptr))
 		return ERR_NOWC;
 
-	/*CAutoConfig config(true);
-	git_config_add_file_ondisk(config, CGit::GetGitPathStringA(projectConfig), GIT_CONFIG_LEVEL_LOCAL, FALSE);
-	git_config_add_file_ondisk(config, CGit::GetGitPathStringA(globalConfig), GIT_CONFIG_LEVEL_GLOBAL, FALSE);
-	git_config_add_file_ondisk(config, CGit::GetGitPathStringA(globalXDGConfig), GIT_CONFIG_LEVEL_XDG, FALSE);
-	if (!systemConfig.IsEmpty())
-	git_config_add_file_ondisk(config, CGit::GetGitPathStringA(systemConfig), GIT_CONFIG_LEVEL_SYSTEM, FALSE);
-	if (!programDataConfig.IsEmpty())
-	git_config_add_file_ondisk(config, CGit::GetGitPathStringA(programDataConfig), GIT_CONFIG_LEVEL_PROGRAMDATA, FALSE);
-	git_repository_set_config(repository, config);*/
+	CAutoConfig config(true);
+	std::string gitdir(wcroot->ptr, wcroot->size);
+	git_config_add_file_ondisk(config, (gitdir + "config").c_str(), GIT_CONFIG_LEVEL_LOCAL, FALSE);
+	std::string home(CUnicodeUtils::StdGetUTF8(GetHomePath()));
+	git_config_add_file_ondisk(config, (home + "\\.gitconfig").c_str(), GIT_CONFIG_LEVEL_GLOBAL, FALSE);
+	git_config_add_file_ondisk(config, (home + "\\.config\\git\\config").c_str(), GIT_CONFIG_LEVEL_XDG, FALSE);
+	std::wstring systemConfig = GetSystemGitConfig();
+	if (!systemConfig.empty())
+		git_config_add_file_ondisk(config, CUnicodeUtils::StdGetUTF8(systemConfig).c_str(), GIT_CONFIG_LEVEL_SYSTEM, FALSE);
+	std::wstring programDataConfig = GetProgramDataConfig();
+	if (!programDataConfig.empty())
+		git_config_add_file_ondisk(config, CUnicodeUtils::StdGetUTF8(programDataConfig).c_str(), GIT_CONFIG_LEVEL_PROGRAMDATA, FALSE);
+	git_repository_set_config(repo, config);
 
 	if (git_repository_head_unborn(repo)) // TODO!
 		return ERR_NOWC;

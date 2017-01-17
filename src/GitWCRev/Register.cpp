@@ -83,7 +83,7 @@ HRESULT RegisterServer(HMODULE hModule,            // DLL module handle
 	wcscat_s(szKey, szCLSID) ;
 
 	// Add the CLSID to the registry.
-	setKeyAndValue(szKey, NULL, szFriendlyName) ;
+	setKeyAndValue(szKey, nullptr, szFriendlyName);
 
 	// Add the server filename subkey under the CLSID key.
 	setKeyAndValue(szKey, L"LocalServer32", szModule) ;
@@ -99,12 +99,12 @@ HRESULT RegisterServer(HMODULE hModule,            // DLL module handle
 
 
 	// Add the version-independent ProgID subkey under HKEY_CLASSES_ROOT.
-	setKeyAndValue(szVerIndProgID, NULL, szFriendlyName) ;
+	setKeyAndValue(szVerIndProgID, nullptr, szFriendlyName);
 	setKeyAndValue(szVerIndProgID, L"CLSID", szCLSID) ;
 	setKeyAndValue(szVerIndProgID, L"CurVer", szProgID) ;
 
 	// Add the versioned ProgID subkey under HKEY_CLASSES_ROOT.
-	setKeyAndValue(szProgID, NULL, szFriendlyName) ;
+	setKeyAndValue(szProgID, nullptr, szFriendlyName);
 	setKeyAndValue(szProgID, L"CLSID", szCLSID) ;
 
 	// add TypeLib keys
@@ -112,13 +112,13 @@ HRESULT RegisterServer(HMODULE hModule,            // DLL module handle
 	wcscat_s(szKey, szLIBID) ;
 
 	// Add the CLSID to the registry.
-	setKeyAndValue(szKey, NULL, NULL) ;
+	setKeyAndValue(szKey, nullptr, nullptr);
 	wcscat_s(szKey, L"\\1.0");
-	setKeyAndValue(szKey, NULL, szFriendlyName) ;
+	setKeyAndValue(szKey, nullptr, szFriendlyName);
 	wcscat_s(szKey, L"\\0");
-	setKeyAndValue(szKey, NULL, NULL) ;
+	setKeyAndValue(szKey, nullptr, nullptr);
 	wcscat_s(szKey, L"\\win32");
-	setKeyAndValue(szKey, NULL, szModule) ;
+	setKeyAndValue(szKey, nullptr, szModule);
 
 
 	return S_OK ;
@@ -149,23 +149,23 @@ void RegisterInterface(HMODULE hModule,            // DLL module handle
 	wcscat_s(szKey, szIID) ;
 
 	// Add the value to the registry.
-	setKeyAndValue(szKey, NULL, szFriendlyName) ;
+	setKeyAndValue(szKey, nullptr, szFriendlyName);
 
 	TCHAR szKey2[MAX_PATH] = { 0 };
 	wcscpy_s(szKey2, szKey);
 	wcscat_s(szKey2, L"\\ProxyStubClsID");
 	// Add the server filename subkey under the IID key.
-	setKeyAndValue(szKey2, NULL, L"{00020424-0000-0000-C000-000000000046}"); //IUnknown
+	setKeyAndValue(szKey2, nullptr, L"{00020424-0000-0000-C000-000000000046}"); //IUnknown
 
 	wcscpy_s(szKey2, szKey);
 	wcscat_s(szKey2, L"\\ProxyStubClsID32");
 	// Add the server filename subkey under the IID key.
-	setKeyAndValue(szKey2, NULL, L"{00020424-0000-0000-C000-000000000046}"); //IUnknown
+	setKeyAndValue(szKey2, nullptr, L"{00020424-0000-0000-C000-000000000046}"); //IUnknown
 
 	wcscpy_s(szKey2, szKey);
 	wcscat_s(szKey2, L"\\TypeLib");
 	// Add the server filename subkey under the CLSID key.
-	setKeyAndValue(szKey2, NULL, szLIBID) ;
+	setKeyAndValue(szKey2, nullptr, szLIBID);
 
 	setValue(szKey2, L"Version", L"1.0") ;
 }
@@ -239,7 +239,7 @@ void CLSIDtochar(const CLSID& clsid, TCHAR* szCLSID, int length)
 {
 	assert(length >= CLSID_STRING_SIZE) ;
 	// Get CLSID
-	LPOLESTR wszCLSID = NULL ;
+	LPOLESTR wszCLSID = nullptr;
 	StringFromCLSID(clsid, &wszCLSID) ;
 
 	// Covert from wide characters to non-wide.
@@ -265,7 +265,7 @@ LONG recursiveDeleteKey(HKEY hKeyParent,           // Parent of key to delete
 	FILETIME time ;
 	TCHAR szBuffer[256] ;
 	DWORD dwSize = _countof(szBuffer);
-	while (RegEnumKeyEx(hKeyChild, 0, szBuffer, &dwSize, NULL, NULL, NULL, &time) == S_OK)
+	while (RegEnumKeyEx(hKeyChild, 0, szBuffer, &dwSize, nullptr, nullptr, nullptr, &time) == S_OK)
 	{
 		// Delete the descendants of this child.
 		lRes = recursiveDeleteKey(hKeyChild, szBuffer) ;
@@ -299,20 +299,20 @@ BOOL setKeyAndValue(const TCHAR* szKey, const TCHAR* szSubkey, const TCHAR* szVa
 	wcscpy_s(szKeyBuf, szKey) ;
 
 	// Add subkey name to buffer.
-	if (szSubkey != NULL)
+	if (szSubkey)
 	{
 		wcscat_s(szKeyBuf, L"\\");
 		wcscat_s(szKeyBuf, szSubkey);
 	}
 
 	// Create and open key and subkey.
-	long lResult = RegCreateKeyEx(HKEY_CLASSES_ROOT , szKeyBuf, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, hKey, NULL) ;
+	long lResult = RegCreateKeyEx(HKEY_CLASSES_ROOT, szKeyBuf, 0, nullptr, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, nullptr, &hKey, nullptr);
 	if (lResult != ERROR_SUCCESS)
 		return FALSE ;
 
 	// Set the Value.
-	if (szValue != NULL)
-		RegSetValueEx(hKey, NULL, 0, REG_SZ, BYTE *)szValue, DWORD( (1 + wcslen(szValue))*sizeof(TCHAR) )		) ;
+	if (szValue)
+		RegSetValueEx(hKey, nullptr, 0, REG_SZ, (BYTE*)szValue, DWORD((1 + wcslen(szValue)) * sizeof(TCHAR)));
 
 	RegCloseKey(hKey) ;
 	return TRUE ;
@@ -324,13 +324,13 @@ BOOL setValue(const TCHAR* szKey, const TCHAR* szEntry, const TCHAR* szValue)
 	HKEY hKey;
 
 	// Create and open key and subkey.
-	long lResult = RegOpenKeyEx(HKEY_CLASSES_ROOT , szKey, 0, KEY_ALL_ACCESS, hKey) ;
+	long lResult = RegOpenKeyEx(HKEY_CLASSES_ROOT , szKey, 0, KEY_ALL_ACCESS, &hKey) ;
 	if (lResult != ERROR_SUCCESS)
 		return FALSE ;
 
 	// Set the Value.
-	if (szValue != NULL)
-		RegSetValueEx(hKey, szEntry, 0, REG_SZ, BYTE *)szValue, DWORD( (1 + wcslen(szValue))*sizeof(TCHAR) )) ;
+	if (szValue)
+		RegSetValueEx(hKey, szEntry, 0, REG_SZ, (BYTE*)szValue, DWORD((1 + wcslen(szValue)) * sizeof(TCHAR)));
 
 	RegCloseKey(hKey) ;
 
@@ -344,15 +344,15 @@ BOOL setValue(const TCHAR* szKey, const TCHAR* szEntry, const TCHAR* szValue)
 
 HRESULT LoadTypeLib(HINSTANCE hInstTypeLib, LPCOLESTR lpszIndex, BSTR* pbstrPath, ITypeLib** ppTypeLib)
 {
-	ATLASSERT(pbstrPath != NULL && ppTypeLib != NULL);
-	if (pbstrPath == NULL || ppTypeLib == NULL)
+	ATLASSERT(pbstrPath && ppTypeLib);
+	if (!pbstrPath || !ppTypeLib)
 		return E_POINTER;
 
-	*pbstrPath = NULL;
-	*ppTypeLib = NULL;
+	*pbstrPath = nullptr;
+	*ppTypeLib = nullptr;
 
 	USES_CONVERSION;
-	ATLASSERT(hInstTypeLib != NULL);
+	ATLASSERT(hInstTypeLib != nullptr);
 	TCHAR szModule[MAX_PATH+10] = {0};
 
 	DWORD dwFLen = ::GetModuleFileName(hInstTypeLib, szModule, MAX_PATH);
@@ -364,7 +364,7 @@ HRESULT LoadTypeLib(HINSTANCE hInstTypeLib, LPCOLESTR lpszIndex, BSTR* pbstrPath
 	// get the extension pointer in case of fail
 	LPTSTR lpszExt = ::PathFindExtension(szModule);
 
-	if (lpszIndex != NULL)
+	if (lpszIndex)
 		lstrcat(szModule, OLE2CT(lpszIndex));
 	LPOLESTR lpszModule = T2OLE(szModule);
 	HRESULT hr = ::LoadTypeLib(lpszModule, ppTypeLib);
@@ -378,7 +378,7 @@ HRESULT LoadTypeLib(HINSTANCE hInstTypeLib, LPCOLESTR lpszIndex, BSTR* pbstrPath
 	if (SUCCEEDED(hr))
 	{
 		*pbstrPath = ::SysAllocString(lpszModule);
-		if (*pbstrPath == NULL)
+		if (!*pbstrPath)
 			hr = E_OUTOFMEMORY;
 	}
 	return hr;
@@ -386,11 +386,11 @@ HRESULT LoadTypeLib(HINSTANCE hInstTypeLib, LPCOLESTR lpszIndex, BSTR* pbstrPath
 
 static inline UINT WINAPI GetDirLen(LPCOLESTR lpszPathName) throw()
 {
-	ATLASSERT(lpszPathName != NULL);
+	ATLASSERT(lpszPathName);
 
 	// always capture the complete file name including extension (if present)
 	LPCOLESTR lpszTemp = lpszPathName;
-	for (LPCOLESTR lpsz = lpszPathName; *lpsz != NULL; )
+	for (LPCOLESTR lpsz = lpszPathName; *lpsz; )
 	{
 		LPCOLESTR lp = CharNextW(lpsz);
 		// remember last directory/drive separator
@@ -412,7 +412,7 @@ HRESULT RegisterTypeLib(HINSTANCE hInstTypeLib, LPCOLESTR lpszIndex)
 		OLECHAR szDir[MAX_PATH] = { 0 };
 		ocscpy_s(szDir, _countof(szDir), bstrPath);
 		// If index is specified remove it from the path
-		if (lpszIndex != NULL)
+		if (lpszIndex)
 		{
 			size_t nLenPath = ocslen(szDir);
 			size_t nLenIndex = ocslen(lpszIndex);

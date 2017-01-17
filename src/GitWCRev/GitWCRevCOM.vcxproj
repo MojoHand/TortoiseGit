@@ -47,6 +47,7 @@
   <ItemGroup>
     <ClCompile Include="..\Utils\Registry.cpp" />
     <ClCompile Include="..\Utils\StringUtils.cpp" />
+    <ClCompile Include="..\Utils\UnicodeUtils.cpp" />
     <ClCompile Include="Register.cpp" />
     <ClCompile Include="status.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -59,8 +60,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Utils\StringUtils.h" />
+    <ClInclude Include="..\Utils\UnicodeUtils.h" />
     <ClInclude Include="Register.h" />
     <ClInclude Include="resourcecom.h" />
+    <ClInclude Include="status.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="GitWCRevCOM.h" />
   </ItemGroup>
@@ -77,6 +80,11 @@
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="..\compatibility.manifest.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\ext\build\libgit2.vcxproj">
+      <Project>{2b4f366c-93ba-491e-87af-5ef7b37f75f7}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

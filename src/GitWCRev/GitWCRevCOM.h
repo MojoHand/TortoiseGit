@@ -51,14 +51,12 @@ public:
 
 	// IGitWCRev implementation
 	//
-	virtual HRESULT __stdcall GetWCInfo(/*[in]*/ BSTR   wcPath, /*[in]*/VARIANT_BOOL folders, /*[in]*/VARIANT_BOOL externals);
-	virtual HRESULT __stdcall GetWCInfo2(/*[in]*/ BSTR   wcPath, /*[in]*/VARIANT_BOOL folders, /*[in]*/VARIANT_BOOL externals, /*[in]*/VARIANT_BOOL externalsNoMixed);
+	//virtual HRESULT __stdcall GetWCInfo(/*[in]*/ BSTR   wcPath, /*[in]*/VARIANT_BOOL folders, /*[in]*/VARIANT_BOOL externals);
+	///virtual HRESULT __stdcall GetWCInfo2(/*[in]*/ BSTR   wcPath, /*[in]*/VARIANT_BOOL folders, /*[in]*/VARIANT_BOOL externals, /*[in]*/VARIANT_BOOL externalsNoMixed);
 
 	virtual HRESULT __stdcall get_Revision(/*[out, retval]*/VARIANT* rev);
 
 	virtual HRESULT __stdcall get_Date(/*[out, retval]*/VARIANT* date);
-
-	virtual HRESULT __stdcall get_Url(/*[out, retval]*/VARIANT* url);
 
 	virtual HRESULT __stdcall get_Author(/*[out, retval]*/VARIANT* author);
 
@@ -66,17 +64,14 @@ public:
 
 	virtual HRESULT __stdcall get_HasUnversioned(/*[out, retval]*/VARIANT_BOOL* modifications);
 
-	virtual HRESULT __stdcall get_HasMixedRevisions(/*[out, retval]*/VARIANT_BOOL* modifications);
-
-	virtual HRESULT __stdcall get_HaveExternalsAllFixedRevision(/*[out, retval]*/VARIANT_BOOL* modifications);
+	//virtual HRESULT __stdcall get_HasMixedRevisions(/*[out, retval]*/VARIANT_BOOL* modifications);
 
 	virtual HRESULT __stdcall get_IsWcTagged(/*[out, retval]*/VARIANT_BOOL* modifications);
 
-	virtual HRESULT __stdcall get_IsSvnItem(/*[out, retval]*/VARIANT_BOOL* svn_item);
+	virtual HRESULT __stdcall get_IsGitItem(/*[out, retval]*/VARIANT_BOOL* svn_item);
 
 private:
-	BOOL CopyDateToString(WCHAR *destbuf, int buflen, apr_time_t time);
-	BOOL IsLockDataAvailable();
+	BOOL CopyDateToString(WCHAR* destbuf, int buflen, __time64_t time);
 
 	HRESULT LoadTypeInfo(ITypeInfo ** pptinfo, const CLSID& libid, const CLSID& iid, LCID lcid);
 	static HRESULT BoolToVariantBool(BOOL value, VARIANT_BOOL* result);

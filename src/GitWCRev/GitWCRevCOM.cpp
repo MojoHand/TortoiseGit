@@ -23,19 +23,10 @@
 #include "GitWCRevCOM.h"
 
 #include <tchar.h>
-#include <windows.h>
 #include <shlwapi.h>
 #include <Shellapi.h>
 #include <comutil.h>
-#include <memory>
 
-#pragma warning(push)
-#include "apr_pools.h"
-#include "svn_error.h"
-#include "svn_client.h"
-#include "svn_path.h"
-#include "svn_dso.h"
-#pragma warning(pop)
 #include "Register.h"
 #include "UnicodeUtils.h"
 #include <atlbase.h>
@@ -58,8 +49,8 @@ int APIENTRY _tWinMain(HINSTANCE /*hInstance*/,
 static void ImplWinMain()
 {
 	int argc = 0;
-	LPWSTR * argv = CommandLineToArgvW(GetCommandLine(), &argc);
-	if (argv == 0)
+	LPWSTR* argv = CommandLineToArgvW(GetCommandLine(), &argc);
+	if (!argv)
 		return;
 
 	if ((argc >= 2) && (argc <= 5))
@@ -77,30 +68,16 @@ static void ImplWinMain()
 static void AutomationMain()
 {
 	// initialize the COM library
-	HRESULT hr = ::CoInitialize(NULL);
-	if( FAILED( hr ) ) {
+	HRESULT hr = ::CoInitialize(nullptr);
+	if (FAILED(hr))
 		return;
-	}
 
-	apr_initialize();
-	svn_dso_initialize2();
-
-	apr_pool_t * pool;
-	apr_pool_create_ex (&pool, NULL, NULL, NULL);
-
-	size_t ret = 0;
-	getenv_s(&ret, NULL, 0, "SVN_ASP_DOT_NET_HACK");
-	if (ret)
-	{
-		svn_wc_set_adm_dir("_svn", pool);
-	}
+	git_libgit2_init();
 
 	RunOutprocServer();
 
-	apr_pool_destroy(pool);
-	apr_terminate2();
+	git_libgit2_shutdown();
 
-	//
 	::CoUninitialize();
 }
 
@@ -118,7 +95,7 @@ static void LockServer(bool doLock)
 	}
 	long newLockCount = InterlockedDecrement(&g_cServerLocks);
 	if (newLockCount == 0)
-		::PostMessage(NULL,WM_QUIT,0,0);
+		::PostMessage(nullptr, WM_QUIT, 0, 0);
 }
 
 //
@@ -148,16 +125,14 @@ GitWCRev::~GitWCRev()
 //
 HRESULT __stdcall GitWCRev::QueryInterface(const IID& iid, void** ppv)
 {
-	if(ppv == 0)
+	if (!ppv)
 		return E_POINTER;
 
 	if (IsEqualIID(iid, IID_IUnknown) || IsEqualIID(iid, IID_IGitWCRev) || IsEqualIID(iid, IID_IDispatch))
-	{
 		*ppv = static_cast<IGitWCRev*>(this) ;
-	}
 	else
 	{
-		*ppv = NULL ;
+		*ppv = nullptr;
 		return E_NOINTERFACE ;
 	}
 	AddRef();
@@ -177,8 +152,8 @@ ULONG __stdcall GitWCRev::Release()
 	return refCount;
 }
 
-HRESULT GitWCRev::GetWCInfoInternal(/*[in]*/ BSTR wcPath, /*[in]*/VARIANT_BOOL folders, /*[in]*/VARIANT_BOOL externals)
-{
+//HRESULT GitWCRev::GetWCInfoInternal(/*[in]*/ BSTR wcPath, /*[in]*/VARIANT_BOOL folders, /*[in]*/VARIANT_BOOL externals)
+/*{
 	SubStat.bFolders = folders;
 	SubStat.bExternals = externals;
 
@@ -239,73 +214,57 @@ HRESULT GitWCRev::GetWCInfoInternal(/*[in]*/ BSTR wcPath, /*[in]*/VARIANT_BOOL f
 	}
 	apr_pool_destroy(pool);
 	return hr;
-}
+}*/
+
 //
 // IGitWCRev implementation
 //
-HRESULT __stdcall GitWCRev::GetWCInfo2(/*[in]*/ BSTR wcPath, /*[in]*/VARIANT_BOOL folders, /*[in]*/VARIANT_BOOL externals, /*[in]*/VARIANT_BOOL externalsNoMixed)
-{
-	if (wcPath==NULL)
+//HRESULT __stdcall GitWCRev::GetWCInfo2(/*[in]*/ BSTR wcPath, /*[in]*/VARIANT_BOOL folders, /*[in]*/VARIANT_BOOL externals, /*[in]*/VARIANT_BOOL externalsNoMixed)
+/*{
+	if (!wcPath)
 		return E_INVALIDARG;
 
 	SubStat.bExternalsNoMixedRevision = externalsNoMixed;
 	return GetWCInfoInternal(wcPath, folders, externals);
-}
+}*/
 
-HRESULT __stdcall GitWCRev::GetWCInfo(/*[in]*/ BSTR wcPath, /*[in]*/VARIANT_BOOL folders, /*[in]*/VARIANT_BOOL externals)
-{
-	if (wcPath==NULL)
+//HRESULT __stdcall GitWCRev::GetWCInfo(/*[in]*/ BSTR wcPath, /*[in]*/VARIANT_BOOL folders, /*[in]*/VARIANT_BOOL externals)
+/*{
+	if (!wcPath)
 		return E_INVALIDARG;
 
 	return GetWCInfoInternal(wcPath, folders, externals);
-}
+}*/
 
 HRESULT __stdcall GitWCRev::get_Revision(/*[out, retval]*/VARIANT* rev)
 {
-	return LongToVariant(SubStat.CmtRev, rev);
-}
-
-HRESULT __stdcall GitWCRev::get_MinRev(/*[out, retval]*/VARIANT* rev)
-{
-	return LongToVariant(SubStat.MinRev, rev);
-}
-
-HRESULT __stdcall GitWCRev::get_MaxRev(/*[out, retval]*/VARIANT* rev)
-{
-	return LongToVariant(SubStat.MaxRev, rev);
+	return Utf8StringToVariant(SubStat.HeadHashReadable, rev);
 }
 
 HRESULT __stdcall GitWCRev::get_Date(/*[out, retval]*/VARIANT* date)
 {
-	if(date == 0)
+	if (!date)
 		return E_POINTER;
 
 	date->vt = VT_BSTR;
 
 	WCHAR destbuf[32] = { 0 };
-	HRESULT result = CopyDateToString(destbuf, _countof(destbuf), SubStat.CmtDate) ? S_OK : S_FALSE;
+	HRESULT result = CopyDateToString(destbuf, _countof(destbuf), SubStat.HeadTime) ? S_OK : S_FALSE;
 	if(S_FALSE == result)
-	{
 		swprintf_s(destbuf, L"");
-	}
 
 	date->bstrVal = SysAllocStringLen(destbuf, (UINT)wcslen(destbuf));
 	return result;
 }
 
-HRESULT __stdcall GitWCRev::get_Url(/*[out, retval]*/VARIANT* url)
-{
-	return Utf8StringToVariant(SubStat.Url, url);
-}
-
 HRESULT __stdcall GitWCRev::get_Author(/*[out, retval]*/VARIANT* author)
 {
-	return Utf8StringToVariant(SubStat.Author, author);
+	return Utf8StringToVariant(SubStat.HeadAuthor.c_str(), author);
 }
 
 HRESULT GitWCRev::Utf8StringToVariant(const char* string, VARIANT* result )
 {
-	if(result == 0)
+	if (!result)
 		return E_POINTER;
 
 	result->vt = VT_BSTR;
@@ -327,34 +286,19 @@ HRESULT __stdcall GitWCRev::get_HasUnversioned(VARIANT_BOOL* modifications)
 	return BoolToVariantBool(SubStat.HasUnversioned, modifications);
 }
 
-HRESULT __stdcall GitWCRev::get_HasMixedRevisions(VARIANT_BOOL* modifications)
-{
-	return BoolToVariantBool(((SubStat.MinRev != SubStat.MaxRev) || SubStat.bIsExternalMixed), modifications);
-}
-
-HRESULT __stdcall GitWCRev::get_HaveExternalsAllFixedRevision(VARIANT_BOOL* modifications)
+/*HRESULT __stdcall GitWCRev::get_HaveExternalsAllFixedRevision(VARIANT_BOOL* modifications)
 {
 	return BoolToVariantBool(!SubStat.bIsExternalsNotFixed, modifications);
-}
+}*/
 
 HRESULT __stdcall GitWCRev::get_IsWcTagged(VARIANT_BOOL* modifications)
 {
 	return BoolToVariantBool(SubStat.bIsTagged, modifications);
 }
 
-HRESULT __stdcall GitWCRev::get_IsSvnItem(/*[out, retval]*/VARIANT_BOOL* svn_item)
+HRESULT __stdcall GitWCRev::get_IsGitItem(/*[out, retval]*/VARIANT_BOOL* svn_item)
 {
-	return BoolToVariantBool(SubStat.bIsSvnItem, svn_item);
-}
-
-HRESULT __stdcall GitWCRev::get_NeedsLocking(/*[out, retval]*/VARIANT_BOOL* needs_locking)
-{
-	return BoolToVariantBool(SubStat.LockData.NeedsLocks, needs_locking);
-}
-
-HRESULT __stdcall GitWCRev::get_IsLocked(/*[out, retval]*/VARIANT_BOOL* locked)
-{
-	return BoolToVariantBool(SubStat.LockData.IsLocked, locked);
+	return BoolToVariantBool(SubStat.bIsGitItem, svn_item);
 }
 
 HRESULT GitWCRev::BoolToVariantBool(BOOL value, VARIANT_BOOL* result)
@@ -375,137 +319,28 @@ HRESULT GitWCRev::LongToVariant(LONG value, VARIANT* result)
 	return S_OK;
 }
 
-HRESULT __stdcall GitWCRev::get_LockCreationDate(/*[out, retval]*/VARIANT* date)
-{
-	if(date == 0)
-		return E_POINTER;
-
-	date->vt = VT_BSTR;
-
-	WCHAR destbuf[32] = { 0 };
-	HRESULT result = S_OK;
-	if(FALSE == IsLockDataAvailable())
-	{
-		swprintf_s(destbuf, L"");
-		result = S_FALSE;
-	}
-	else
-	{
-		result = CopyDateToString(destbuf, _countof(destbuf), SubStat.LockData.CreationDate) ? S_OK : S_FALSE;
-		if(S_FALSE == result)
-		{
-			swprintf_s(destbuf, L"");
-		}
-	}
-
-	date->bstrVal = SysAllocStringLen(destbuf, (UINT)wcslen(destbuf));
-	return result;
-}
-
-HRESULT __stdcall GitWCRev::get_LockOwner(/*[out, retval]*/VARIANT* owner)
-{
-	if(owner == 0)
-		return E_POINTER;
-
-	owner->vt = VT_BSTR;
-
-	HRESULT result;
-	size_t len;
-
-	if(FALSE == IsLockDataAvailable())
-	{
-		len = 0;
-		result = S_FALSE;
-	}
-	else
-	{
-		len = strlen(SubStat.LockData.Owner);
-		result = S_OK;
-	}
-
-	std::unique_ptr<WCHAR[]> buf (new WCHAR[len*4 + 1]);
-	SecureZeroMemory(buf.get(), (len*4 + 1)*sizeof(WCHAR));
-
-	if(TRUE == SubStat.LockData.NeedsLocks)
-	{
-		MultiByteToWideChar(CP_UTF8, 0, SubStat.LockData.Owner, -1, buf.get(), (int)len*4);
-	}
-
-	owner->bstrVal = SysAllocString(buf.get());
-	return result;
-}
-
-HRESULT __stdcall GitWCRev::get_LockComment(/*[out, retval]*/VARIANT* comment)
-{
-	if(comment == 0)
-		return E_POINTER;
-
-	comment->vt = VT_BSTR;
-
-	HRESULT result;
-	size_t len;
-
-	if(FALSE == IsLockDataAvailable())
-	{
-		len = 0;
-		result = S_FALSE;
-	}
-	else
-	{
-		len = strlen(SubStat.LockData.Comment);
-		result = S_OK;
-	}
-
-	std::unique_ptr<WCHAR[]> buf (new WCHAR[len*4 + 1]);
-	SecureZeroMemory(buf.get(), (len*4 + 1)*sizeof(WCHAR));
-
-	if(TRUE == SubStat.LockData.NeedsLocks)
-	{
-		MultiByteToWideChar(CP_UTF8, 0, SubStat.LockData.Comment, -1, buf.get(), (int)len*4);
-	}
-
-	comment->bstrVal = SysAllocString(buf.get());
-	return result;
-}
-
 //
 // Get a readable string from a apr_time_t date
 //
-BOOL GitWCRev::CopyDateToString(WCHAR *destbuf, int buflen, apr_time_t time)
+BOOL GitWCRev::CopyDateToString(WCHAR *destbuf, int buflen, __time64_t ttime)
 {
 	const int min_buflen = 32;
-	if((NULL == destbuf) || (min_buflen > buflen))
-	{
+	if (!destbuf || (min_buflen > buflen))
 		return FALSE;
-	}
-
-	const __time64_t ttime = time/1000000L;
 
 	struct tm newtime;
 	if (_localtime64_s(&newtime, &ttime))
 		return FALSE;
 	// Format the date/time in international format as yyyy/mm/dd hh:mm:ss
-	swprintf_s(destbuf, min_buflen, L"%04d/%02d/%02d %02d:%02d:%02d",
-		newtime.tm_year + 1900,
-		newtime.tm_mon + 1,
-		newtime.tm_mday,
-		newtime.tm_hour,
-		newtime.tm_min,
-		newtime.tm_sec);
+	swprintf_s(destbuf, min_buflen, L"%04d/%02d/%02d %02d:%02d:%02d", newtime.tm_year + 1900, newtime.tm_mon + 1, newtime.tm_mday, newtime.tm_hour, newtime.tm_min, newtime.tm_sec);
 	return TRUE;
-}
-
-BOOL GitWCRev::IsLockDataAvailable()
-{
-	BOOL bResult = (SubStat.LockData.NeedsLocks && SubStat.LockData.IsLocked);
-	return bResult;
 }
 
 HRESULT GitWCRev::LoadTypeInfo(ITypeInfo ** pptinfo, const CLSID &libid, const CLSID &iid, LCID lcid)
 {
-	if(pptinfo == 0)
+	if (!pptinfo)
 		return E_POINTER;
-	*pptinfo = NULL;
+	*pptinfo = nullptr;
 
 	// Load type library.
 	CComPtr<ITypeLib> ptlib;
@@ -514,7 +349,7 @@ HRESULT GitWCRev::LoadTypeInfo(ITypeInfo ** pptinfo, const CLSID &libid, const C
 		return hr;
 
 	// Get type information for interface of the object.
-	LPTYPEINFO ptinfo = NULL;
+	LPTYPEINFO ptinfo = nullptr;
 	hr = ptlib->GetTypeInfoOfGuid(iid, &ptinfo);
 	if (FAILED(hr))
 		return hr;
@@ -525,7 +360,7 @@ HRESULT GitWCRev::LoadTypeInfo(ITypeInfo ** pptinfo, const CLSID &libid, const C
 
 HRESULT __stdcall GitWCRev::GetTypeInfoCount(UINT* pctinfo)
 {
-	if(pctinfo == 0)
+	if (!pctinfo)
 		return E_POINTER;
 
 	*pctinfo = 1;
@@ -534,15 +369,15 @@ HRESULT __stdcall GitWCRev::GetTypeInfoCount(UINT* pctinfo)
 
 HRESULT __stdcall GitWCRev::GetTypeInfo(UINT itinfo, LCID /*lcid*/, ITypeInfo** pptinfo)
 {
-	if(pptinfo == 0)
+	if (!pptinfo)
 		return E_POINTER;
 
-	*pptinfo = NULL;
+	*pptinfo = nullptr;
 
-	if(itinfo != 0)
+	if (itinfo)
 		return ResultFromScode(DISP_E_BADINDEX);
 
-	if (m_ptinfo == 0)
+	if (!m_ptinfo)
 		return E_UNEXPECTED;
 
 	m_ptinfo->AddRef();      // AddRef and return pointer to cached
@@ -573,16 +408,14 @@ HRESULT __stdcall GitWCRev::Invoke(DISPID dispidMember, REFIID /*riid*/,
 //
 HRESULT __stdcall CFactory::QueryInterface(const IID& iid, void** ppv)
 {
-	if(ppv == 0)
+	if (!ppv)
 		return E_POINTER;
 
 	if (IsEqualIID(iid, IID_IUnknown) || IsEqualIID(iid, IID_IClassFactory))
-	{
 		*ppv = static_cast<IClassFactory*>(this) ;
-	}
 	else
 	{
-		*ppv = NULL ;
+		*ppv = nullptr;
 		return E_NOINTERFACE ;
 	}
 	AddRef();
@@ -608,22 +441,18 @@ HRESULT __stdcall CFactory::CreateInstance(IUnknown* pUnknownOuter,
 										   const IID& iid,
 										   void** ppv)
 {
-	if (ppv == 0)
+	if (!ppv)
 		return E_POINTER;
 
 	// Cannot aggregate.
-	if (pUnknownOuter != NULL)
-	{
+	if (pUnknownOuter)
 		return CLASS_E_NOAGGREGATION ;
-	}
 
 	// Create component.
 	ATL::CComPtr<GitWCRev> pA;
 	pA.Attach(new (std::nothrow) GitWCRev());// refcount set to 1 in constructor
-	if (pA == NULL)
-	{
+	if (!pA)
 		return E_OUTOFMEMORY ;
-	}
 
 	return pA->QueryInterface(iid, ppv);
 }
@@ -652,7 +481,7 @@ static void RunOutprocServer()
 	// If the class factory is not registered no object will ever be instantiated,
 	// hence no object will ever be released, hence WM_QUIT never appears in the
 	// message queue and the message loop below will run forever.
-	if(FAILED(hr))
+	if (FAILED(hr))
 		return;
 
 	//
@@ -674,7 +503,7 @@ static void RunOutprocServer()
 //
 STDAPI DllRegisterServer()
 {
-	const HMODULE hModule = ::GetModuleHandle(NULL);
+	const HMODULE hModule = ::GetModuleHandle(nullptr);
 
 	HRESULT hr = RegisterServer(hModule,
 		CLSID_GitWCRev,
@@ -683,9 +512,7 @@ STDAPI DllRegisterServer()
 		L"GitWCRev.object.1",
 		LIBID_LibGitWCRev) ;
 	if (SUCCEEDED(hr))
-	{
-		RegisterTypeLib(hModule, NULL);
-	}
+		RegisterTypeLib(hModule, nullptr);
 	return hr;
 }
 
@@ -694,15 +521,13 @@ STDAPI DllRegisterServer()
 //
 STDAPI DllUnregisterServer()
 {
-	const HMODULE hModule = ::GetModuleHandle(NULL);
+	const HMODULE hModule = ::GetModuleHandle(nullptr);
 
 	HRESULT hr = UnregisterServer(CLSID_GitWCRev,
 		L"GitWCRev.object",
 		L"GitWCRev.object.1",
 		LIBID_LibGitWCRev) ;
 	if (SUCCEEDED(hr))
-	{
-		UnRegisterTypeLib(hModule, NULL);
-	}
+		UnRegisterTypeLib(hModule, nullptr);
 	return hr;
 }
